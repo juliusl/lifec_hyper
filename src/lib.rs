@@ -26,6 +26,10 @@ impl Plugin<ThunkContext> for HyperContext {
                 if let Some(client) = tc.client() {
                     let mut request = Request::builder();
 
+                    if let Some(uri) = tc.as_ref().find_text("uri") {
+                        request = request.uri(uri);
+                    }
+
                     if let Some(method) = tc.as_ref().find_text("method") {
                         request = request.method(method.as_str());
                     }
