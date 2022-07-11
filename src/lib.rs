@@ -1,9 +1,12 @@
 use hyper::{Body, Request};
-use lifec::{plugins::{Plugin, ThunkContext}, Value};
+use lifec::{
+    plugins::{Plugin, ThunkContext},
+    Value,
+};
 
 /// Type for installing a lifec plugin implementation. This plugin makes
 /// https requests, with a hyper secure client.
-/// 
+///
 #[derive(Default)]
 pub struct HyperContext;
 
@@ -43,34 +46,33 @@ impl Plugin<ThunkContext> for HyperContext {
                         }
                     }
 
-                    if let Some(body) = tc.as_ref().find_binary("body") {
-                        match request.body(Body::from(body)) {
-                            Ok(request) => match client.request(request).await {
-                                Ok(mut resp) => {
-                                    match hyper::body::to_bytes(resp.body_mut()).await {
-                                        Ok(body) => {
-                                            if let Some(project) = tc.project.as_mut() {
-                                                *project = project.with_block(
-                                                    block_name,
-                                                    "response",
-                                                    |a| {
-                                                        a.add_binary_attr("body", body.to_vec());
-                                                    },
-                                                );
-                                            }
-                                        }
-                                        Err(err) => {
-                                            eprintln!("request: error getting body {err}");
-                                        }
+                    let body = tc
+                        .as_ref()
+                        .find_binary("body")
+                        .and_then(|b| Some(Body::from(b)))
+                        .unwrap_or(Body::empty());
+
+                    match request.body(Body::from(body)) {
+                        Ok(request) => match client.request(request).await {
+                            Ok(mut resp) => match hyper::body::to_bytes(resp.body_mut()).await {
+                                Ok(body) => {
+                                    if let Some(project) = tc.project.as_mut() {
+                                        *project =
+                                            project.with_block(block_name, "response", |a| {
+                                                a.add_binary_attr("body", body.to_vec());
+                                            });
                                     }
                                 }
                                 Err(err) => {
-                                    eprintln!("request: error sending request {err}");
+                                    eprintln!("request: error getting body {err}");
                                 }
                             },
                             Err(err) => {
-                                eprintln!("request: error creating request {err}");
+                                eprintln!("request: error sending request {err}");
                             }
+                        },
+                        Err(err) => {
+                            eprintln!("request: error creating request {err}");
                         }
                     }
                 }
