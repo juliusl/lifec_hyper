@@ -55,12 +55,18 @@ impl Plugin<ThunkContext> for HyperContext {
                                                 );
                                             }
                                         }
-                                        Err(_) => {}
+                                        Err(err) => {
+                                            eprintln!("request: error getting body {err}");
+                                        }
                                     }
                                 }
-                                Err(_) => {}
+                                Err(err) => {
+                                    eprintln!("request: error sending request {err}");
+                                }
                             },
-                            Err(_) => {}
+                            Err(err) => {
+                                eprintln!("request: error creating request {err}");
+                            }
                         }
                     }
                 }
